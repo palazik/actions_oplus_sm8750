@@ -162,8 +162,8 @@ jobs:
         id: clang-cache
         uses: actions/cache@v4
         with:
-          path: kernel_workspace/clang-r563880c
-          key: Linux-aosp-clang-clang-r563880c
+          path: kernel_workspace/zyc-clang
+          key: zyc-clang-19.0.0git-20240723
 
       - name: Cache build-tools
         id: buildtools-cache
