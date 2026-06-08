@@ -76,7 +76,7 @@ on:
         description: 'Enable ZRAM Writeback (better memory management)'
         required: true
         type: boolean
-        default: false
+        default:  true
       schedutil_opt:
         description: 'Enable SchedUtil optimizations (better CPU governor)'
         required: true
