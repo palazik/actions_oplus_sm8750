@@ -33,7 +33,7 @@ on:
         description: 'Install LZ4KD Patch (ZRAM optimization)'
         required: true
         type: boolean
-        default: false
+        default:  true 
       bbr_enable:
         description: "Enable TCP BBR/Brutal (false=off, true=add, default=set as default)"
         required: true
