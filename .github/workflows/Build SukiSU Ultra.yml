@@ -62,7 +62,7 @@ on:
         description: 'LTO Optimization (none = fast compile, thin = default, full = slow)'
         required: true
         type: choice
-        default: 'thin'
+        default: 'full'
         options:
           - 'none'
           - 'thin'
