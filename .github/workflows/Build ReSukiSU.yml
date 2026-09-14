@@ -194,7 +194,7 @@ jobs:
 
           # Source clone
           echo "Cloning source repository..."
-          curl -L https://github.com/palazik/android_kernel_common_oneplus_sm8750/archive/refs/heads/6.6.143_oneplus13_coloros16.zip \
+          curl -L https://github.com/palazik/android_kernel_common_oneplus_sm8750/archive/refs/heads/6.6.143_oneplus13_coloros16_oplus_sync.zip \
             -o common.zip &&
           unzip -q common.zip &&
           mv android_kernel_common_oneplus_sm8750-* common &&
