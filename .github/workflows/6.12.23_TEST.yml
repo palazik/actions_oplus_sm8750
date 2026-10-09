@@ -247,8 +247,23 @@ jobs:
           echo "🛠️ Setting up ReSukiSU (main)..."
           curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s main
           cd KernelSU
-          KSU_VERSION_COUNT=$(git rev-list --count HEAD)
-          export KSUVER=$(expr $KSU_VERSION_COUNT + 37185)
+          KSUVER=$(python3 - <<'PY'
+          import json
+          import urllib.request
+          try:
+              with urllib.request.urlopen("https://api.github.com/repos/ReSukiSU/ReSukiSU/actions/runs?per_page=1&status=success", timeout=20) as resp:
+                  data = json.load(resp)
+              runs = data.get("workflow_runs") or []
+              print(runs[0].get("run_number", "") if runs else "")
+          except Exception:
+              print("")
+          PY
+          )
+          if [ -z "$KSUVER" ]; then
+            KSU_VERSION_COUNT=$(git rev-list --count HEAD)
+            KSUVER=$(expr $KSU_VERSION_COUNT + 37185)
+          fi
+          export KSUVER
           echo "KSUVER=$KSUVER" >> $GITHUB_ENV
           echo "✅ ReSukiSU $(git rev-parse --short HEAD) (ver $KSUVER)"
 

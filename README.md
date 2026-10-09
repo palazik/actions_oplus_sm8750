@@ -156,7 +156,7 @@
    - ColorOS / OxygenOS → **OP13 Kernel Build**
    - AOSP-based ROMs → **OP13 Kernel AOSP Build**
 4. Hit **"Run workflow"** and configure options:
-   - 🔘 **KSU type**: `ReSukiSU` (default) / `SukiSU Ultra` / `KernelSU` / `KernelSU Next`
+   - 🔘 **KSU type**: `ReSukiSU` (default) / `SukiSU Ultra` / `KernelSU` / `KernelSU Next` / `No Root`
    - ✅ SuSFS (recommended for hiding)
    - ✅ Fengchi (performance scheduler)
    - ✅ Memory Opt Patches (24 optimizations)

@@ -25,6 +25,7 @@ on:
           - 'SukiSU Ultra'
           - 'KernelSU'
           - 'KernelSU Next'
+          - 'No Root'
       SUSFS:
         description: 'Enable SuSFS (Enhances hide environment)'
         required: true
@@ -325,8 +326,23 @@ jobs:
           echo "🛠️ Setting up ReSukiSU (main)..."
           curl -LSs "https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh" | bash -s main
           cd KernelSU
-          KSU_VERSION_COUNT=$(git rev-list --count HEAD)
-          export KSUVER=$(expr $KSU_VERSION_COUNT + 37185)
+          KSUVER=$(python3 - <<'PY'
+          import json
+          import urllib.request
+          try:
+              with urllib.request.urlopen("https://api.github.com/repos/ReSukiSU/ReSukiSU/actions/runs?per_page=1&status=success", timeout=20) as resp:
+                  data = json.load(resp)
+              runs = data.get("workflow_runs") or []
+              print(runs[0].get("run_number", "") if runs else "")
+          except Exception:
+              print("")
+          PY
+          )
+          if [ -z "$KSUVER" ]; then
+            KSU_VERSION_COUNT=$(git rev-list --count HEAD)
+            KSUVER=$(expr $KSU_VERSION_COUNT + 37185)
+          fi
+          export KSUVER
           echo "KSUVER=$KSUVER" >> $GITHUB_ENV
           echo "✅ ReSukiSU $(git rev-parse --short HEAD) (ver $KSUVER)"
 
@@ -378,10 +394,21 @@ jobs:
           echo "KSUVER=$KSUVER" >> $GITHUB_ENV
           echo "✅ KernelSU-Next $(git describe --tags 2>/dev/null || git rev-parse --short HEAD)  (ver $KSUVER)"
 
+      - name: 🚫 Setup No Root (Remove KernelSU)
+        if: inputs.ksu_type == 'No Root'
+        run: |
+          cd kernel_workspace/common
+          echo "🧹 Removing KernelSU integration..."
+          rm -rf KernelSU KernelSU-Next drivers/kernelsu
+          sed -i '/obj-$(CONFIG_KSU) += kernelsu\//d' drivers/Makefile || true
+          sed -i '/source "drivers\/kernelsu\/Kconfig"/d' drivers/Kconfig || true
+          echo "KSUVER=0" >> $GITHUB_ENV
+          echo "✅ No Root mode enabled"
+
       - name: 🔧 Setup Patches
         run: |
           cd kernel_workspace
-          if [ "${{ github.event.inputs.SUSFS }}" == "true" ]; then
+          if [ "${{ github.event.inputs.SUSFS }}" == "true" ] && [ "${{ inputs.ksu_type }}" != "No Root" ]; then
             git clone --depth=1 -b gki-android15-6.6 https://gitlab.com/simonpunk/susfs4ksu.git &
           fi
           git clone --depth=1 https://github.com/mrcxlinux/kernel_patches.git &
@@ -389,7 +416,7 @@ jobs:
           git clone --depth=1 https://github.com/palazik/kernel_patches.git wildkernels_patches &
           wait
 
-          if [ "${{ github.event.inputs.SUSFS }}" == "true" ]; then
+          if [ "${{ github.event.inputs.SUSFS }}" == "true" ] && [ "${{ inputs.ksu_type }}" != "No Root" ]; then
             cp susfs4ksu/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch ./common/
             cp susfs4ksu/kernel_patches/fs/* ./common/fs/
             cp susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
@@ -472,23 +499,27 @@ jobs:
         run: |
           cd kernel_workspace
           DEFCONFIG="./common/arch/arm64/configs/gki_defconfig"
-          echo "CONFIG_KSU=y" >> "$DEFCONFIG"
-          case "${{ inputs.ksu_type }}" in
-            "ReSukiSU")
-              echo 'CONFIG_KSU_FULL_NAME_FORMAT="v%KSU_VERSION%-%COMMIT_SHA%@palaziks"' >> "$DEFCONFIG"
-              ;;
-            "SukiSU Ultra")
-              echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$DEFCONFIG"
-              ;;
-            "KernelSU")
-              echo "CONFIG_KPROBES=y" >> "$DEFCONFIG"
-              echo "CONFIG_HAVE_KPROBES=y" >> "$DEFCONFIG"
-              echo "CONFIG_KPROBE_EVENTS=y" >> "$DEFCONFIG"
-              ;;
-            "KernelSU Next")
-              echo "CONFIG_EXT4_FS=y" >> "$DEFCONFIG"
-              ;;
-          esac
+          if [ "${{ inputs.ksu_type }}" = "No Root" ]; then
+            echo "CONFIG_KSU=n" >> "$DEFCONFIG"
+          else
+            echo "CONFIG_KSU=y" >> "$DEFCONFIG"
+            case "${{ inputs.ksu_type }}" in
+              "ReSukiSU")
+                echo 'CONFIG_KSU_FULL_NAME_FORMAT="v%KSU_VERSION%-%COMMIT_SHA%@palaziks"' >> "$DEFCONFIG"
+                ;;
+              "SukiSU Ultra")
+                echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$DEFCONFIG"
+                ;;
+              "KernelSU")
+                echo "CONFIG_KPROBES=y" >> "$DEFCONFIG"
+                echo "CONFIG_HAVE_KPROBES=y" >> "$DEFCONFIG"
+                echo "CONFIG_KPROBE_EVENTS=y" >> "$DEFCONFIG"
+                ;;
+              "KernelSU Next")
+                echo "CONFIG_EXT4_FS=y" >> "$DEFCONFIG"
+                ;;
+            esac
+          fi
           echo "CONFIG_TMPFS_XATTR=y" >> "$DEFCONFIG"
           echo "CONFIG_TMPFS_POSIX_ACL=y" >> "$DEFCONFIG"
 
@@ -507,7 +538,7 @@ jobs:
           echo "CONFIG_LLVM_POLLY=y" >> "$DEFCONFIG"
           echo "CONFIG_LD_DEAD_CODE_DATA_ELIMINATION=y" >> "$DEFCONFIG"
 
-          if [ "${{ github.event.inputs.SUSFS }}" == "true" ]; then
+          if [ "${{ github.event.inputs.SUSFS }}" == "true" ] && [ "${{ inputs.ksu_type }}" != "No Root" ]; then
             echo "📦 Enabling SUSFS features..."
             echo "CONFIG_KSU_SUSFS=y" >> "$DEFCONFIG"
             echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> "$DEFCONFIG"
@@ -998,6 +1029,7 @@ jobs:
           case "${{ inputs.ksu_type }}" in
             "SukiSU Ultra") KSU_TYPENAME="SukiSU-Ultra" ;;
             "KernelSU Next") KSU_TYPENAME="KSUNext" ;;
+            "No Root") KSU_TYPENAME="NoRoot" ;;
             *) KSU_TYPENAME="${{ inputs.ksu_type }}" ;;
           esac
           if [[ "${{ github.event.inputs.lz4kd_enable }}" == "true" ]]; then
