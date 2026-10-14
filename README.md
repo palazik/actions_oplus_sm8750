@@ -15,7 +15,7 @@
 <p align="center">
   <a href="#-features"><img src="https://img.shields.io/badge/Features-20+-brightgreen?style=flat-square" /></a>
   <a href="#-build-workflow"><img src="https://img.shields.io/badge/Build-GitHub_Actions-blue?style=flat-square" /></a>
-  <a href="#-memory--scheduler-optimizations"><img src="https://img.shields.io/badge/Optimizations-25+_patches-purple?style=flat-square" /></a>
+  <a href="#-memory--scheduler-optimizations"><img src="https://img.shields.io/badge/Optimizations-24_patches-purple?style=flat-square" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/palazik/actions_oplus_sm8750?style=flat-square" /></a>
 </p>
 
@@ -25,7 +25,7 @@
 
 | Property | Value |
 |----------|-------|
-| **Kernel Version** | `6.6.143` (upstreamed from OGKI 6.6.89) |
+| **Kernel Version** | `6.6.144` (upstreamed from OGKI 6.6.89) |
 | **Chipset** | `SM8750` \| Snapdragon 8 Elite \| sun |
 | **Android Version** | `15 VanillaIceCream` (compatible with later versions) |
 | **ROM Compatibility** | OxygenOS / ColorOS **or** AOSP — one build per ROM type ([see below](#-rom-compatibility)) |
@@ -37,19 +37,19 @@
 ## 🎯 ROM Compatibility
 
 > [!IMPORTANT]
-> A single build **cannot** cover both ColorOS/OxygenOS and AOSP — the toolchain decides the target ROM. Pick the workflow that matches the ROM you run.
+> A single build **cannot** cover both ColorOS/OxygenOS and AOSP — the toolchain decides the target ROM. Pick the workflow that matches the ROM you run, then choose your root manager with the **KSU type** option.
 
 | Your ROM | Workflow to run | Toolchain |
 |----------|-----------------|-----------|
-| **ColorOS / OxygenOS** | `Build <manager>.yml` (normal) | ZyCromerZ Clang |
-| **AOSP-based** (LineageOS, crDroid, etc.) | `Build <manager> AOSP.yml` | AOSP Clang |
+| **ColorOS / OxygenOS** | **OP13 Kernel Build** (`Build Kernel.yml`) | ZyCromerZ Clang |
+| **AOSP-based** (LineageOS, crDroid, etc.) | **OP13 Kernel AOSP Build** (`Build Kernel AOSP.yml`) | AOSP Clang |
 
 - **ZyCromerZ Clang builds → ColorOS / OxygenOS only.**
 - **AOSP Clang builds → AOSP ROMs only.**
 - Flashing the wrong variant on your ROM will not boot.
 
 > [!NOTE]
-> **GitHub Releases only ship the ColorOS / OxygenOS (normal) builds.** If you're on an AOSP ROM, there is no prebuilt release — fork the repo and run the matching **`Build <manager> AOSP`** workflow yourself under **Actions**, then grab the ZIP from the artifacts (or your Telegram bot).
+> **GitHub Releases only ship the ColorOS / OxygenOS (normal) builds.** If you're on an AOSP ROM, there is no prebuilt release — fork the repo and run **OP13 Kernel AOSP Build** yourself under **Actions**, then grab the ZIP from the artifacts (or your Telegram bot).
 
 ---
 
@@ -64,10 +64,9 @@
 - ✅ **Unicode Bypass Fix** – Path traversal protection *(always on)*
 
 ### 🚀 Performance & Scheduler
-- ✅ **Fengchi / HMBIRD** – Advanced CPU scheduler optimizations for SM8750
+- ✅ **Fengchi / HMBIRD** – Advanced CPU scheduler optimizations for SM8750 *(turning it off also removes HMBIRD symbols that some OnePlus vendor modules may use)*
 - ✅ **BORE Scheduler** – Burst-Oriented Response Enhancer (EEVDF) for snappier interactivity *(optional, off by default)*
 - ✅ **ADIOS IO Scheduler** – Improved read/write performance
-- ✅ **SchedUtil Optimizations** – Better CPU governor responsiveness *(optional)*
 - ✅ **Oryon CPU Tuning** – `-mcpu=oryon-1` flags for SM8750
 
 ### 🌐 Networking
@@ -87,7 +86,7 @@
 ### 🎮 Gaming & Compatibility
 - ✅ **NTSync** – Low-latency NT sync primitives (Wine/Proton gaming) *(optional)*
 - ✅ **Droidspaces** – SYSVIPC + PID_NS + POSIX_MQUEUE for proot-distro
-- ✅ **LRNG v59** – Better entropy for crypto/gaming *(optional)*
+- ✅ **LRNG v60** – Better entropy for crypto/gaming *(optional)*
 
 ### 🔋 Battery & Power
 - ✅ **Wakelock Blocker** – Reduce idle battery drain
@@ -100,7 +99,7 @@
 
 ## 🧠 Memory & Scheduler Optimizations (WildKernels)
 
-> 25 low-level patches for reduced latency, better cache usage, and improved responsiveness.
+> 24 low-level patches for reduced latency, better cache usage, and improved responsiveness.
 
 | Patch | Purpose |
 |-------|---------|
@@ -111,7 +110,6 @@
 | `optimise_memcmp.patch` | Faster memory comparison routines |
 | `minimise_wakeup_time.patch` | Reduce CPU wake latency for interactive tasks |
 | `int_sqrt.patch` | Optimized integer square root for scheduler math |
-| `force_tcp_nodelay.patch` | Reduce TCP latency for gaming/streaming |
 | `reduce_gc_thread_sleep_time.patch` | Shorter GC thread sleeps for smoother UI |
 | `add_timeout_wakelocks_globally.patch` | Prevent aggressive wakelock timeouts |
 | `f2fs_reduce_congestion.patch` | Lower F2FS write contention |
@@ -143,8 +141,6 @@
 ```bash
 -O2                          # Balanced optimization level
 -mcpu=oryon-1               # Target Snapdragon 8 Elite cores
--fno-strict-aliasing        # Safer pointer aliasing
--fno-delete-null-pointer-checks  # Extra null safety
 -flto=thin                  # ThinLTO for link-time optimization (optional)
 -ffile-prefix-map=...       # Reproducible builds
 ```
@@ -156,17 +152,18 @@
 ### Quick Start
 1. **Fork** this repository (ensure all branches are copied)
 2. Go to **Actions** → Enable workflows
-3. Pick the workflow for your **root manager _and_ ROM**:
-   - ColorOS / OxygenOS → **`Build <manager>`** (e.g. *"SukiSU Ultra OP13 Build"*)
-   - AOSP-based ROMs → **`Build <manager> AOSP`**
-   - Then hit **"Run workflow"** ([why two variants?](#-rom-compatibility))
-4. Configure options:
+3. Pick the workflow for your **ROM** ([why two workflows?](#-rom-compatibility)):
+   - ColorOS / OxygenOS → **OP13 Kernel Build**
+   - AOSP-based ROMs → **OP13 Kernel AOSP Build**
+4. Hit **"Run workflow"** and configure options:
+   - 🔘 **KSU type**: `ReSukiSU` (default) / `SukiSU Ultra` / `KernelSU` / `KernelSU Next`
    - ✅ SuSFS (recommended for hiding)
    - ✅ Fengchi (performance scheduler)
-   - ✅ Memory Opt Patches (25 optimizations)
+   - ✅ Memory Opt Patches (24 optimizations)
    - 🔘 LTO Type: `thin` (balanced) / `none` (fastest compile) / `full` (max optimization)
    - 🔘 Optional features: LZ4KD, NTSync, IPv6 NAT, etc.
 5. Click **"Run workflow"** → Wait ~5-6 minutes
+   - The run shows up as *"<KSU type> OP13 Build"* (or *"<KSU type> OP13 AOSP Build"*)
 6. Download `AnyKernel3_*.zip` from artifacts or Telegram (if you configured TG bot)
 
 ### Workflow Optimizations
@@ -186,6 +183,9 @@ This CI pipeline includes:
 | `lto_type: full` + all patches | ~7:00-9:00 |
 
 > 💡 **Tip**: Use `lto_type: none` for rapid testing, `thin` for release builds.
+
+### Updating the Kernel Version
+Change `KERNEL_FULL_VERSION` in both `Build Kernel.yml` and `Build Kernel AOSP.yml` (and the version shown in this README). The kernel source branch, ccache keys, ZIP names, Telegram messages and releases all follow it.
 
 ---
 
@@ -209,7 +209,7 @@ This CI pipeline includes:
 
 1. Download the latest `AnyKernel3_*.zip`:
    - **ColorOS / OxygenOS** → [Releases](../../releases) or Actions artifacts
-   - **AOSP** → Actions artifacts of your own **`Build <manager> AOSP`** run (Releases are COS/OOS only — see [ROM Compatibility](#-rom-compatibility))
+   - **AOSP** → Actions artifacts of your own **OP13 Kernel AOSP Build** run (Releases are COS/OOS only — see [ROM Compatibility](#-rom-compatibility))
 2. Boot to custom recovery (TWRP / OrangeFox / KernelFlasher)
 3. Flash the AnyKernel3 ZIP
 4. **(Required)** Install a metamodule for KSU:
@@ -254,5 +254,5 @@ This CI pipeline includes:
 </p>
 
 <p align="center">
-  <sub>Built with ❤️ by palaziks • Kernel version: <code>6.6.143-palaziks-ShiftPorts</code></sub>
+  <sub>Built with ❤️ by palaziks • Kernel version: <code>6.6.144-palaziks-ShiftPorts</code></sub>
 </p>

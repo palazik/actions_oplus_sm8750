@@ -7,13 +7,10 @@ on:
         type: choice
         description: 'Name of the workflow to be cleaned'
         required: true
-        default: 'Build Kernel Only'
+        default: 'OP13 Kernel Build'
         options:
-          - Build SukiSU Ultra
-          - Build KernelSU Next
-          - Build Kernel Only
-          - Build Official KernelSU
-          - Build ReSukiSU
+          - OP13 Kernel Build
+          - OP13 Kernel AOSP Build
       count:
         description: 'Maximum number of runs to clean'
         required: false
